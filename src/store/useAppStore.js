@@ -1,14 +1,13 @@
 import { create } from 'zustand';
 import { initialOrders } from '../constants/mockData';
+import { mockRoute } from '../constants/mockRoute';
+
+// Object to store interval IDs outside the store state to avoid serialization issues
+const activeIntervals = {};
 
 export const useAppStore = create((set, get) => ({
-  // Deep copy so mock data is never mutated
   orders: JSON.parse(JSON.stringify(initialOrders)),
 
-  /**
-   * Merges `changes` into the order matching `orderId`.
-   * Uses immutable map + spread pattern.
-   */
   updateOrder: (orderId, changes) => {
     set((state) => ({
       orders: state.orders.map((order) =>
@@ -17,10 +16,6 @@ export const useAppStore = create((set, get) => ({
     }));
   },
 
-  /**
-   * Appends a new timeline entry to the specified order.
-   * Uses immutable map + spread to avoid direct mutation.
-   */
   addTimelineEntry: (orderId, status, location = null) => {
     set((state) => ({
       orders: state.orders.map((order) =>
@@ -37,29 +32,52 @@ export const useAppStore = create((set, get) => ({
     }));
   },
 
-  /**
-   * Accepts an order: sets status to 'Accepted', assigns the driver,
-   * and adds a timeline entry.
-   */
   acceptOrder: (orderId, driverId) => {
     const { updateOrder, addTimelineEntry } = get();
     updateOrder(orderId, { status: 'Accepted', assignedDriverId: driverId });
     addTimelineEntry(orderId, 'Accepted');
   },
 
-  /**
-   * Updates just the status field of an order.
-   */
   updateStatus: (orderId, newStatus) => {
     const { updateOrder } = get();
     updateOrder(orderId, { status: newStatus });
   },
 
-  /**
-   * Clears the driverLocation for an order (called when tracking stops).
-   */
+  startTracking: (orderId) => {
+    const { updateOrder } = get();
+    let routeIndex = 0;
+
+    // Send initial location immediately
+    updateOrder(orderId, {
+      driverLocation: {
+        ...mockRoute[0],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    routeIndex = 1;
+
+    // Clear any existing interval for this order
+    if (activeIntervals[orderId]) clearInterval(activeIntervals[orderId]);
+
+    // Start background interval
+    activeIntervals[orderId] = setInterval(() => {
+      const location = mockRoute[routeIndex % mockRoute.length];
+      updateOrder(orderId, {
+        driverLocation: {
+          ...location,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+      routeIndex += 1;
+    }, 5000);
+  },
+
   stopTracking: (orderId) => {
     const { updateOrder } = get();
+    if (activeIntervals[orderId]) {
+      clearInterval(activeIntervals[orderId]);
+      delete activeIntervals[orderId];
+    }
     updateOrder(orderId, { driverLocation: null });
   },
 }));

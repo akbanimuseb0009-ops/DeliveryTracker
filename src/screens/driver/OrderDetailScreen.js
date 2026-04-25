@@ -11,43 +11,15 @@ import { COLORS, CARD_STYLE } from '../../constants/theme';
 const OrderDetailScreen = ({ route, navigation }) => {
   const { orderId } = route.params;
   const orders = useAppStore((s) => s.orders);
-  const updateOrder = useAppStore((s) => s.updateOrder);
   const addTimelineEntry = useAppStore((s) => s.addTimelineEntry);
   const updateStatus = useAppStore((s) => s.updateStatus);
+  const startTracking = useAppStore((s) => s.startTracking);
   const stopTracking = useAppStore((s) => s.stopTracking);
   const currentUser = useAuthStore((s) => s.currentUser);
   const order = orders.find((o) => o.id === orderId);
-  const [isTracking, setIsTracking] = useState(false);
-  // useRef for interval ID — never useState for interval IDs
-  const intervalRef = useRef(null);
-  // useRef to track current position in mock route
-  const routeIndexRef = useRef(0);
 
-  /** Starts GPS tracking simulation. Updates driverLocation every 5s cycling mockRoute. */
-  const startTracking = () => {
-    routeIndexRef.current = 0;
-    setIsTracking(true);
-    intervalRef.current = setInterval(() => {
-      const location = mockRoute[routeIndexRef.current % mockRoute.length];
-      updateOrder(orderId, {
-        driverLocation: { ...location, updatedAt: new Date().toISOString() },
-      });
-      routeIndexRef.current += 1;
-    }, 5000);
-  };
-
-  /** Stops tracking: clears interval, resets state, nullifies driverLocation. */
-  const stopTrackingLocal = () => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = null;
-    setIsTracking(false);
-    stopTracking(orderId);
-  };
-
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  // Derived tracking state from whether the order has a location in store
+  const isTracking = !!order?.driverLocation;
 
   if (!order) {
     return (
@@ -60,14 +32,14 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const handlePickedUp = () => {
     updateStatus(orderId, 'Picked Up');
     addTimelineEntry(orderId, 'Picked Up', mockRoute[0]);
-    startTracking();
+    startTracking(orderId);
   };
   const handleInTransit = () => {
     updateStatus(orderId, 'In Transit');
     addTimelineEntry(orderId, 'In Transit');
   };
   const handleDelivered = () => {
-    stopTrackingLocal();
+    stopTracking(orderId);
     updateStatus(orderId, 'Delivered');
     addTimelineEntry(orderId, 'Delivered');
     Alert.alert('Success', 'Order marked as Delivered!', [

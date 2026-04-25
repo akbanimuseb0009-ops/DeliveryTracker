@@ -11,10 +11,17 @@ const DriverMapScreen = ({ route }) => {
   const order = orders.find((o) => o.id === orderId);
   const webViewRef = useRef(null);
 
-  // Reload WebView when driver coordinates change
+  // Reload WebView or Inject JS when driver coordinates change
   useEffect(() => {
-    if (webViewRef.current && order && order.driverLocation) {
-      webViewRef.current.reload();
+    if (webViewRef.current && order?.driverLocation) {
+      const { latitude, longitude } = order.driverLocation;
+      const script = `
+        if (typeof marker !== 'undefined') {
+          marker.setLatLng([${latitude}, ${longitude}]);
+          map.panTo([${latitude}, ${longitude}]);
+        }
+      `;
+      webViewRef.current.injectJavaScript(script);
     }
   }, [order?.driverLocation?.latitude, order?.driverLocation?.longitude]);
 
@@ -51,11 +58,12 @@ const DriverMapScreen = ({ route }) => {
         attribution: '© OpenStreetMap'
       }).addTo(map);
       var truckIcon = L.divIcon({
-        html: '🚚',
+        html: '<div style="font-size: 30px;">🚚</div>',
         className: '',
-        iconSize: [30, 30]
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
       });
-      L.marker([${latitude}, ${longitude}], { icon: truckIcon })
+      var marker = L.marker([${latitude}, ${longitude}], { icon: truckIcon })
         .addTo(map)
         .bindPopup('Driver is here')
         .openPopup();
