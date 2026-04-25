@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { COLORS, SHADOWS } from '../constants/theme';
 
@@ -76,7 +77,11 @@ const LoginScreen = () => {
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+                <Ionicons 
+                  name={showPassword ? "eye" : "eye-off"} 
+                  size={22} 
+                  color={COLORS.textSecondary} 
+                />
               </TouchableOpacity>
             </View>
           </View>
