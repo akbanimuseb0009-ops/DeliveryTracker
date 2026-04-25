@@ -11,19 +11,13 @@ const DriverMapScreen = ({ route }) => {
   const order = orders.find((o) => o.id === orderId);
   const webViewRef = useRef(null);
 
-  // Reload WebView or Inject JS when driver coordinates change
-  useEffect(() => {
-    if (webViewRef.current && order?.driverLocation) {
-      const { latitude, longitude } = order.driverLocation;
-      const script = `
-        if (typeof marker !== 'undefined') {
-          marker.setLatLng([${latitude}, ${longitude}]);
-          map.panTo([${latitude}, ${longitude}]);
-        }
-      `;
-      webViewRef.current.injectJavaScript(script);
-    }
-  }, [order?.driverLocation?.latitude, order?.driverLocation?.longitude]);
+  // Use a ref to store initial coordinates so the HTML stays stable (prevents flickering)
+  const initialCoords = React.useMemo(() => {
+    return order?.driverLocation ? { 
+      lat: order.driverLocation.latitude, 
+      lng: order.driverLocation.longitude 
+    } : null;
+  }, [orderId]);
 
   if (!order || !order.driverLocation) {
     return (
@@ -38,39 +32,57 @@ const DriverMapScreen = ({ route }) => {
 
   const { latitude, longitude, updatedAt } = order.driverLocation;
 
-  const mapHtml = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>
-      * { margin: 0; padding: 0; }
-      #map { height: 100vh; width: 100vw; }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    <script>
-      var map = L.map('map').setView([${latitude}, ${longitude}], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-      var truckIcon = L.divIcon({
-        html: '<div style="font-size: 30px;">🚚</div>',
-        className: '',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      });
-      var marker = L.marker([${latitude}, ${longitude}], { icon: truckIcon })
-        .addTo(map)
-        .bindPopup('Driver is here')
-        .openPopup();
-    </script>
-  </body>
-  </html>
-  `;
+  // Inject JS to move marker smoothly when coordinates change
+  useEffect(() => {
+    if (webViewRef.current && order?.driverLocation) {
+      const { latitude, longitude } = order.driverLocation;
+      const script = `
+        if (typeof marker !== 'undefined') {
+          marker.setLatLng([${latitude}, ${longitude}]);
+          map.panTo([${latitude}, ${longitude}]);
+        }
+      `;
+      webViewRef.current.injectJavaScript(script);
+    }
+  }, [order?.driverLocation?.latitude, order?.driverLocation?.longitude]);
+
+  // Memoize the HTML so it never changes (prevents WebView reload/flicker)
+  const mapHtml = React.useMemo(() => {
+    if (!initialCoords) return '';
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <style>
+        * { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100vw; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        var map = L.map('map').setView([${initialCoords.lat}, ${initialCoords.lng}], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+        var truckIcon = L.divIcon({
+          html: '<div style="font-size: 30px;">🚚</div>',
+          className: '',
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
+        });
+        var marker = L.marker([${initialCoords.lat}, ${initialCoords.lng}], { icon: truckIcon })
+          .addTo(map)
+          .bindPopup('Driver is here')
+          .openPopup();
+      </script>
+    </body>
+    </html>
+    `;
+  }, [orderId, !!initialCoords]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
