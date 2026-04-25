@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { COLORS, SHADOWS } from '../constants/theme';
+import PrimaryButton from '../components/PrimaryButton';
 
 const LoginScreen = () => {
   const login = useAuthStore((state) => state.login);
@@ -25,7 +26,6 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     setLoginLoading(true);
-    // Simulate network delay
     setTimeout(async () => {
       await login(email.trim(), password);
       setLoginLoading(false);
@@ -35,43 +35,44 @@ const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
-        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
       >
-        <View style={styles.headerContainer}>
-          <Text style={styles.emoji}>🚚</Text>
+        <View style={styles.headerSection}>
+          <View style={styles.logoContainer}>
+            <Ionicons name="cube" size={40} color="#FFF" />
+          </View>
           <Text style={styles.title}>DeliveryTracker</Text>
-          <Text style={styles.subtitle}>Supply Chain Management</Text>
+          <Text style={styles.subtitle}>Logistics Management System</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign In</Text>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor={COLORS.grey}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color={COLORS.grey} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="driver@test.com"
+                placeholderTextColor={COLORS.grey}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.passwordRow}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color={COLORS.grey} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Enter your password"
+                style={styles.input}
+                placeholder="••••••••"
                 placeholderTextColor={COLORS.grey}
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
               />
               <TouchableOpacity
                 style={styles.eyeButton}
@@ -79,28 +80,20 @@ const LoginScreen = () => {
               >
                 <Ionicons 
                   name={showPassword ? "eye" : "eye-off"} 
-                  size={22} 
-                  color={COLORS.textSecondary} 
+                  size={20} 
+                  color={COLORS.grey} 
                 />
               </TouchableOpacity>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.signInButton, loginLoading && styles.signInButtonDisabled]}
+          <PrimaryButton 
+            title="Login"
             onPress={handleLogin}
-            disabled={loginLoading}
-          >
-            {loginLoading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.signInText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
+            loading={loginLoading}
+          />
 
-          {authError !== '' && (
-            <Text style={styles.errorText}>{authError}</Text>
-          )}
+          {authError && <Text style={styles.errorText}>{authError}</Text>}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -115,93 +108,93 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    padding: 24,
   },
-  headerContainer: {
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 48,
   },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 12,
+  logoContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    ...SHADOWS.medium,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 16,
     color: COLORS.textSecondary,
+    marginTop: 4,
   },
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 24,
-    ...SHADOWS.small,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    ...SHADOWS.medium,
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+  inputGroup: {
     marginBottom: 20,
-    textAlign: 'center',
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   inputContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    height: 56,
   },
-  passwordInput: {
+  inputIcon: {
+    marginLeft: 16,
+    marginRight: 12,
+  },
+  input: {
     flex: 1,
+    height: '100%',
+    color: COLORS.textPrimary,
+    fontSize: 16,
   },
   eyeButton: {
-    position: 'absolute',
-    right: 12,
-    padding: 4,
+    padding: 12,
   },
-  eyeIcon: {
-    fontSize: 20,
-  },
-  signInButton: {
+  button: {
     backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
+    height: 56,
+    borderRadius: 14,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    ...SHADOWS.small,
   },
-  signInButtonDisabled: {
-    opacity: 0.7,
-  },
-  signInText: {
-    color: '#FFFFFF',
+  buttonText: {
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   errorText: {
     color: COLORS.danger,
-    fontSize: 14,
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: 16,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
