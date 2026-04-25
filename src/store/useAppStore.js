@@ -69,7 +69,7 @@ export const useAppStore = create((set, get) => ({
         },
       });
       routeIndex += 1;
-    }, 5000);
+    }, 3000);
   },
 
   stopTracking: (orderId) => {
